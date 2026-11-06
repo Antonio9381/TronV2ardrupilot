@@ -1,0 +1,5 @@
+firmware/*.apj
+logs/
+*.tlog
+*.tlog.raw
+__pycache__/
