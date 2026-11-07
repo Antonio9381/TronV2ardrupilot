@@ -1,0 +1,195 @@
+{
+    "Format version": 2,
+    "Components": {
+        "Flight Controller": {
+            "Product": {
+                "Manufacturer": "Holybro",
+                "Model": "Pixhawk6C",
+                "Version": "",
+                "URL": ""
+            },
+            "Firmware": {
+                "Type": "ArduCopter",
+                "Version": "4.7.2 official"
+            },
+            "Specifications": {
+                "MCU Series": "STM32H7xx"
+            },
+            "Notes": ""
+        },
+        "Frame": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Specifications": {
+                "TOW min Kg": 1.6,
+                "TOW max Kg": 1.9,
+                "Frame class": "Quad"
+            },
+            "Notes": ""
+        },
+        "Battery Monitor": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Firmware": {
+                "Type": "",
+                "Version": ""
+            },
+            "FC Connection": {
+                "Type": "Analog",
+                "Protocol": "Analog Voltage and Current"
+            },
+            "Notes": ""
+        },
+        "Battery": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Specifications": {
+                "Chemistry": "Lipo",
+                "Volt per cell max": 4.2,
+                "Volt per cell arm": 3.6,
+                "Volt per cell low": 3.5,
+                "Volt per cell crit": 3.02,
+                "Volt per cell min": 3.0,
+                "Number of cells": 4,
+                "Capacity mAh": 5200
+            },
+            "Notes": ""
+        },
+        "ESC": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Firmware": {
+                "Type": "",
+                "Version": ""
+            },
+            "FC->ESC Connection": {
+                "Type": "Main Out",
+                "Protocol": "DShot300"
+            },
+            "ESC->FC Telemetry": {
+                "Type": "None",
+                "Protocol": "None"
+            },
+            "Notes": ""
+        },
+        "Motors": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Specifications": {
+                "Poles": 14
+            },
+            "Notes": ""
+        },
+        "Propellers": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Specifications": {
+                "Diameter_inches": 10.0
+            },
+            "Notes": ""
+        },
+        "GNSS Receiver": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Firmware": {
+                "Type": "",
+                "Version": ""
+            },
+            "FC Connection": {
+                "Type": "SERIAL3",
+                "Protocol": "AUTO"
+            },
+            "Notes": ""
+        },
+        "RC Controller": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Firmware": {
+                "Type": "",
+                "Version": ""
+            },
+            "Notes": ""
+        },
+        "RC Transmitter": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Firmware": {
+                "Type": "",
+                "Version": ""
+            },
+            "Notes": ""
+        },
+        "RC Receiver": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Firmware": {
+                "Type": "",
+                "Version": ""
+            },
+            "FC Connection": {
+                "Type": "RCin/SBUS",
+                "Protocol": "All"
+            },
+            "Notes": ""
+        },
+        "Telemetry": {
+            "Product": {
+                "Manufacturer": "",
+                "Model": "",
+                "Version": "",
+                "URL": ""
+            },
+            "Firmware": {
+                "Type": "",
+                "Version": ""
+            },
+            "FC Connection": {
+                "Type": "SERIAL1",
+                "Protocol": "MAVLink2"
+            },
+            "Notes": ""
+        }
+    },
+    "Program version": "5.0.2",
+    "Configuration template": "empty_4.7.x"
+}

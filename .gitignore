@@ -3,3 +3,4 @@ logs/
 *.tlog
 *.tlog.raw
 __pycache__/
+.venv-amc/
