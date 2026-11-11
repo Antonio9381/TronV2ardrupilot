@@ -7,7 +7,7 @@ Companion-side control for the Tron S500. It takes an objective (`lat`, `long`, 
 - It never arms or takes off on real hardware. `sitl-takeoff` refuses unless `SIM_SPEEDUP` exists.
 - Every command checks that the vehicle is in GUIDED and armed, with a fresh heartbeat and position, home set, ≥10 sats, the battery above `min_battery_v`, and path planning on.
 - Targets are limited to the FC fence minus a margin, and to `alt_min_m`–`FENCE_ALT_MAX - 5`. One leg can be at most 150 m, one nudge at most 5 m and 180°.
-- Nudges read the lidar first: a move toward an obstacle is shortened to stop 2.5 m short of it, or refused if it's already closer. Without lidar data only pure yaw/up/down nudges are allowed.
+- Nudges read the lidar first: a move toward an obstacle is shortened to stop 2.5 m short of it, or refused if it's already closer. If the flight controller reports the lidar unhealthy, only pure yaw/up/down nudges are allowed. An open field with nothing in range is fine: ArduPilot sends no readings then, and that counts as clear.
 - Nudges hold the current heading unless you ask for yaw, so forward stays forward.
 - If you change mode on the RC, it stops instantly and sends nothing more.
 - No progress for 20 s or a timeout → hold. Low battery → hold (RTL in a mission).

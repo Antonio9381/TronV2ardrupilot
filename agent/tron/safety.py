@@ -92,12 +92,14 @@ class Guard:
         horiz = math.hypot(forward, right)
         if horiz == 0:
             return forward, right, None
-        if now - state.last_proximity > lim.proximity_timeout_s or all(d is None for d in state.sectors):
+        if not state.lidar_healthy:
             if lim.require_lidar:
-                raise SafetyError("no lidar data, can't check the way is clear")
+                raise SafetyError("lidar not healthy, can't check the way is clear")
             return forward, right, None
+        fresh = now - state.last_proximity <= lim.proximity_timeout_s
+        sectors = state.sectors if fresh else (None,) * 8
         bearing = math.degrees(math.atan2(right, forward))
-        free = free_distance(state.sectors, bearing, lim.body_half_width_m)
+        free = free_distance(sectors, bearing, lim.body_half_width_m)
         allowed = free - lim.obstacle_clearance_m
         if allowed < 0.3:
             raise SafetyError(f"obstacle {free:.1f} m that way, refusing")

@@ -25,6 +25,7 @@ class VehicleState:
     last_battery: float = 0.0
     sectors: tuple = (None,) * 8
     last_proximity: float = 0.0
+    lidar_healthy: Optional[bool] = None
 
     @property
     def has_position(self):

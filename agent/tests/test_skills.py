@@ -131,12 +131,19 @@ def test_obstacle_behind_only_blocks_backwards(pilot, vehicle):
     assert pilot.nudge(2, 0).status is Status.ARRIVED
 
 
-def test_nudge_refused_without_lidar(pilot, vehicle):
-    vehicle.lidar_dead = True
-    vehicle.set_state(last_proximity=0.0)
+def test_nudge_refused_when_lidar_unhealthy(pilot, vehicle):
+    vehicle.set_state(lidar_healthy=False)
     out = pilot.nudge(1, 0)
     assert out.status is Status.REJECTED and "lidar" in out.message
     assert pilot.nudge(0, 0, 45).status is Status.ARRIVED
+
+
+def test_open_field_no_readings_is_clear(pilot, vehicle):
+    vehicle.lidar_dead = True
+    vehicle.set_state(sectors=(2.0,) * 8, last_proximity=0.0)
+    assert pilot.nudge(3, 0).status is Status.ARRIVED
+    _, lat, _, _, _ = vehicle.commands[0]
+    assert lat == pytest.approx(offset_latlon(*HOME, 3, 0)[0], abs=2e-6)
 
 
 def test_yaw_cap(pilot, vehicle):

@@ -41,7 +41,8 @@ class FakeAutopilot:
                                           base, self.custom_mode, mavlink.MAV_STATE_ACTIVE)
                 self.m.mav.global_position_int_send(0, -338880000, 1511870000, 40000, 10000, 100, 0, 0, 9000)
                 self.m.mav.gps_raw_int_send(0, 3, -338880000, 1511870000, 40000, 80, 100, 0, 0, 17)
-                self.m.mav.sys_status_send(0, 0, 0, 0, 15800, 1000, 87, 0, 0, 0, 0, 0, 0)
+                prox = mavlink.MAV_SYS_STATUS_SENSOR_PROXIMITY
+                self.m.mav.sys_status_send(prox, prox, prox, 0, 15800, 1000, 87, 0, 0, 0, 0, 0, 0)
                 for k in range(8):
                     self.m.mav.distance_sensor_send(0, 20, 1200, 350 if k == 2 else 1200, 0, 0, k, 0)
                 self.m.mav.distance_sensor_send(0, 20, 1200, 90, 0, 0, 25, 0)
@@ -99,6 +100,7 @@ def test_telemetry_parsed(link):
     assert v.state().sats == 17
     assert wait(lambda: v.state().sectors[7] is not None)
     assert v.state().sectors[2] == pytest.approx(3.5)
+    assert v.state().lidar_healthy is True
     assert v.state().sectors[0] == pytest.approx(12.0)
     s = v.state()
     assert s.lat == pytest.approx(-33.888)

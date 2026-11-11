@@ -56,25 +56,30 @@ print("mode", mode, "armed", armed)
 if mode != "GUIDED" or not armed:
     sys.exit("not flying in GUIDED, refusing to send")
 
-for msg_id in (mav.MAVLINK_MSG_ID_GLOBAL_POSITION_INT, mav.MAVLINK_MSG_ID_DISTANCE_SENSOR):
+for msg_id in (mav.MAVLINK_MSG_ID_GLOBAL_POSITION_INT, mav.MAVLINK_MSG_ID_DISTANCE_SENSOR, mav.MAVLINK_MSG_ID_SYS_STATUS):
     m.mav.command_long_send(m.target_system, m.target_component, mav.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
                             msg_id, 200000, 0, 0, 0, 0, 0)
 
 rel_alt = None
+lidar_healthy = None
 sectors = {}
-first_sector = None
-end = time.time() + 3
-while time.time() < end:
-    msg = m.recv_match(type=["GLOBAL_POSITION_INT", "DISTANCE_SENSOR"], blocking=True, timeout=0.5)
+start = time.time()
+while time.time() - start < 3:
+    msg = m.recv_match(type=["GLOBAL_POSITION_INT", "DISTANCE_SENSOR", "SYS_STATUS"], blocking=True, timeout=0.5)
     if msg is None or msg.get_srcSystem() != m.target_system or msg.get_srcComponent() != m.target_component:
         continue
-    if msg.get_type() == "GLOBAL_POSITION_INT":
+    t = msg.get_type()
+    if t == "GLOBAL_POSITION_INT":
         rel_alt = msg.relative_alt / 1000
+    elif t == "SYS_STATUS":
+        bit = mav.MAV_SYS_STATUS_SENSOR_PROXIMITY
+        lidar_healthy = bool(msg.onboard_control_sensors_present & bit
+                             and msg.onboard_control_sensors_enabled & bit
+                             and msg.onboard_control_sensors_health & bit)
     elif msg.orientation <= 7:
         valid = 0 < msg.current_distance < msg.max_distance
         sectors[msg.orientation] = (msg.current_distance if valid else msg.max_distance) / 100
-        first_sector = first_sector or time.time()
-    if rel_alt is not None and first_sector and time.time() - first_sector > 1:
+    if rel_alt is not None and lidar_healthy is not None and time.time() - start > 1.5:
         break
 
 if rel_alt is None:
@@ -84,8 +89,8 @@ if rel_alt + up < MIN_ALT:
 
 horiz = math.hypot(fwd, right)
 if horiz > 0:
-    if not sectors:
-        sys.exit("no lidar data, can't check the way is clear, refusing")
+    if not lidar_healthy:
+        sys.exit("lidar not healthy, can't check the way is clear, refusing")
     free = free_distance(sectors, math.degrees(math.atan2(right, fwd)))
     allowed = free - CLEARANCE
     if allowed < 0.3:

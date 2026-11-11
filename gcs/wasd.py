@@ -13,6 +13,7 @@ STOP_DISTANCE = 3.0
 HALF_WIDTH = 1.0
 MIN_ALT = 2.0
 STALE_S = 2.0
+SECTOR_STALE_S = 1.0
 VELOCITY_MASK = 0b010111000111
 
 KEYS = {
@@ -45,8 +46,9 @@ class Drone:
         self.armed = False
         self.rel_alt = None
         self.sectors = {}
+        self.lidar_healthy = None
         self.last_heartbeat = 0.0
-        self.last_proximity = 0.0
+        self.last_sys_status = 0.0
         while True:
             hb = self.m.recv_match(type="HEARTBEAT", blocking=True, timeout=30)
             if hb is None:
@@ -56,9 +58,10 @@ class Drone:
                 self.m.target_component = hb.get_srcComponent()
                 self._handle(hb)
                 break
-        for msg_id in (mav.MAVLINK_MSG_ID_GLOBAL_POSITION_INT, mav.MAVLINK_MSG_ID_DISTANCE_SENSOR):
+        for msg_id, us in ((mav.MAVLINK_MSG_ID_GLOBAL_POSITION_INT, 100000), (mav.MAVLINK_MSG_ID_DISTANCE_SENSOR, 100000),
+                           (mav.MAVLINK_MSG_ID_SYS_STATUS, 500000)):
             self.m.mav.command_long_send(self.m.target_system, self.m.target_component,
-                                         mav.MAV_CMD_SET_MESSAGE_INTERVAL, 0, msg_id, 100000, 0, 0, 0, 0, 0)
+                                         mav.MAV_CMD_SET_MESSAGE_INTERVAL, 0, msg_id, us, 0, 0, 0, 0, 0)
 
     def _handle(self, msg):
         t = msg.get_type()
@@ -69,10 +72,15 @@ class Drone:
             self.last_heartbeat = now
         elif t == "GLOBAL_POSITION_INT":
             self.rel_alt = msg.relative_alt / 1000
+        elif t == "SYS_STATUS":
+            bit = mav.MAV_SYS_STATUS_SENSOR_PROXIMITY
+            self.lidar_healthy = bool(msg.onboard_control_sensors_present & bit
+                                      and msg.onboard_control_sensors_enabled & bit
+                                      and msg.onboard_control_sensors_health & bit)
+            self.last_sys_status = now
         elif t == "DISTANCE_SENSOR" and msg.orientation <= 7:
             valid = 0 < msg.current_distance < msg.max_distance
-            self.sectors[msg.orientation] = (msg.current_distance if valid else msg.max_distance) / 100
-            self.last_proximity = now
+            self.sectors[msg.orientation] = ((msg.current_distance if valid else msg.max_distance) / 100, now)
 
     def poll(self):
         while True:
@@ -81,6 +89,14 @@ class Drone:
                 return
             if msg.get_srcSystem() == self.m.target_system and msg.get_srcComponent() == self.m.target_component:
                 self._handle(msg)
+
+    @property
+    def lidar_ok(self):
+        return self.lidar_healthy and time.time() - self.last_sys_status < STALE_S
+
+    def fresh_sectors(self):
+        now = time.time()
+        return {k: d for k, (d, t) in self.sectors.items() if now - t < SECTOR_STALE_S}
 
     @property
     def flying_guided(self):
@@ -106,11 +122,11 @@ def command(pressed, drone):
     if fwd or right:
         norm = math.hypot(fwd, right) / SPEED
         fwd, right = fwd / norm, right / norm
-        if time.time() - drone.last_proximity > STALE_S or not drone.sectors:
+        if not drone.lidar_ok:
             fwd = right = 0.0
-            note = "no lidar data yet: horizontal moves off"
+            note = "waiting for lidar status" if drone.lidar_healthy is None else "lidar not healthy: horizontal moves off"
         else:
-            free = free_distance(drone.sectors, math.degrees(math.atan2(right, fwd)))
+            free = free_distance(drone.fresh_sectors(), math.degrees(math.atan2(right, fwd)))
             if free < STOP_DISTANCE:
                 fwd = right = 0.0
                 note = f"blocked: obstacle {free:.1f} m that way"

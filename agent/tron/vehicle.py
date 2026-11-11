@@ -159,7 +159,11 @@ class MavlinkVehicle:
             elif t == "SYS_STATUS":
                 v = None if msg.voltage_battery in (0, 65535) else msg.voltage_battery / 1000.0
                 pct = None if msg.battery_remaining < 0 else msg.battery_remaining
-                self._state = s.evolve(battery_v=v, battery_pct=pct, last_battery=now)
+                bit = mavlink.MAV_SYS_STATUS_SENSOR_PROXIMITY
+                healthy = bool(msg.onboard_control_sensors_present & bit
+                               and msg.onboard_control_sensors_enabled & bit
+                               and msg.onboard_control_sensors_health & bit)
+                self._state = s.evolve(battery_v=v, battery_pct=pct, last_battery=now, lidar_healthy=healthy)
             elif t == "DISTANCE_SENSOR":
                 if msg.orientation > 7:
                     return

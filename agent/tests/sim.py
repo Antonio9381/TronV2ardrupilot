@@ -23,7 +23,7 @@ class FakeVehicle:
             gps_fix=3, sats=18, battery_v=battery_v, battery_pct=90,
             last_heartbeat=self.t, last_position=self.t,
             last_gps=self.t, last_battery=self.t,
-            sectors=(12.0,) * 8, last_proximity=self.t,
+            sectors=(12.0,) * 8, last_proximity=self.t, lidar_healthy=True,
         )
         self.lidar_dead = False
         self.yaw_rate = 45.0
