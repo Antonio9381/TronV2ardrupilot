@@ -1,0 +1,7 @@
+[link]
+conn = "udpin:127.0.0.1:14560"
+source_system = 1
+source_component = 191
+
+[camera]
+source = "none"

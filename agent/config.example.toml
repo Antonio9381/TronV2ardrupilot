@@ -1,0 +1,46 @@
+[link]
+conn = "udpin:0.0.0.0:14553"
+baud = 57600
+source_system = 255
+source_component = 190
+send_heartbeat = false
+connect_timeout_s = 30
+
+[limits]
+fence_radius_m = 80
+fence_margin_m = 10
+alt_min_m = 3
+alt_max_m = 40
+alt_margin_m = 5
+max_leg_m = 150
+max_nudge_m = 5
+min_battery_v = 14.2
+min_sats = 10
+arrive_tol_m = 2
+arrive_alt_tol_m = 1
+stuck_window_s = 20
+stuck_progress_m = 1
+link_timeout_s = 3
+position_timeout_s = 2
+require_path_planning = true
+
+[mission]
+search_step_m = 5
+search_radius_m = 15
+search_dwell_s = 2
+track_s = 30
+track_deadband_m = 0.5
+track_max_step_m = 1.5
+lost_s = 5
+max_researches = 2
+end_action = "hold"
+
+[camera]
+source = "none"
+index = 0
+hfov_deg = 62.2
+min_area_frac = 0.002
+
+[log]
+directory = "logs"
+level = "INFO"

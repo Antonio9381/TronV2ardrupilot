@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tron"
+version = "0.1.0"
+description = "Companion control for the Tron S500 drone"
+requires-python = ">=3.11"
+dependencies = ["pymavlink>=2.4.40"]
+
+[project.optional-dependencies]
+vision = ["opencv-python-headless", "numpy"]
+test = ["pytest", "opencv-python-headless", "numpy"]
+
+[project.scripts]
+tron = "tron.cli:main"
+
+[tool.setuptools]
+packages = ["tron"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
