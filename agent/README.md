@@ -21,7 +21,9 @@ pip install -e '.[test]'
 pytest
 ```
 
-On the Pi, inside `~/drone-venv`, run `pip install -e '.[vision]'`. `picamera2` comes from apt, so create the venv with `--system-site-packages` (or set `[camera] source = "opencv"`).
+On the Pi: `sudo apt install -y python3-opencv python3-numpy`, then `python3 -m venv --system-site-packages ~/tron-venv` and `pip install -e . pytest`.
+
+The drone has no camera yet, so `[camera] source = "none"` everywhere. A mission then ignores `colour` and just flies to the point and holds. When a downward camera is fitted, `sudo apt install python3-picamera2` and set `source = "picamera2"` (or `"opencv"` for a USB webcam); the camera must point straight down with the top of the image toward the nose.
 
 ## Try it on SITL first
 
@@ -89,8 +91,6 @@ python3 ../pi/nudge.py udpin:127.0.0.1:14561 0 2 0
 4. Old `nudge.py 2 0`, then `tron nudge 2 0`.
 5. `tron goto` toward a point beyond the fence. It must print `rejected`.
 6. Run `tron goto` to 40 m away and flick to Loiter mid-flight. It must print `override`.
-7. `tron mission` with a coloured tarp and `[camera] source` set.
-
-The camera must point straight down, with the top of the image toward the nose.
+7. `tron mission` to a point (no camera yet, so no colour search).
 
 Abort at any point by switching to Loiter on the RC.

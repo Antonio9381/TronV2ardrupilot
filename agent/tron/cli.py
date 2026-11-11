@@ -3,6 +3,7 @@ import json
 import logging
 import sys
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from . import __version__
@@ -110,6 +111,9 @@ def run(args, cfg):
         return 0
     if args.command == "mission":
         objective = load_objective(args.file)
+        if objective.colour and cfg.camera.source == "none":
+            log.warning("no camera configured: ignoring colour %s, flying to the point only", objective.colour)
+            objective = replace(objective, colour=None)
     with open_vehicle(cfg, args) as vehicle:
         wait_for_state(vehicle)
         if args.command == "status":

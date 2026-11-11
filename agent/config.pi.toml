@@ -4,4 +4,4 @@ source_system = 1
 source_component = 191
 
 [camera]
-source = "picamera2"
+source = "none"

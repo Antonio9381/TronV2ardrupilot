@@ -51,3 +51,13 @@ def test_check_objective(tmp_path, capsys):
     assert main(["check-objective", str(p)]) == 0
     p.write_text('{"lat": -33.88, "alt": 8}')
     assert main(["check-objective", str(p)]) == 2
+
+
+def test_mission_without_camera_ignores_colour(tmp_path, capsys):
+    obj = tmp_path / "o.json"
+    obj.write_text('{"lat": -33.888, "long": 151.187, "alt": 10, "colour": "red"}')
+    code, ap = run_cli(tmp_path, "mission", str(obj))
+    out = capsys.readouterr()
+    assert "ignoring colour red" in out.err
+    assert "phase=transit" in out.out
+    assert ap.targets == []
