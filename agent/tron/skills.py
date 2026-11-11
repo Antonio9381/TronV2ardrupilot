@@ -4,7 +4,7 @@ import math
 import time
 from dataclasses import dataclass
 
-from .geo import body_to_ne, distance_m, offset_latlon
+from .geo import angle_diff, body_to_ne, distance_m, offset_latlon
 from .safety import SafetyError
 
 log = logging.getLogger("tron.skills")
@@ -63,14 +63,14 @@ class Pilot:
         horiz = distance_m(s.lat, s.lon, lat, lon)
         return horiz, abs(s.rel_alt - alt)
 
-    def send(self, lat, lon, alt):
+    def send(self, lat, lon, alt, yaw_deg=None):
         s, rejected = self._prepare(lat, lon, alt)
         if rejected:
             return rejected
-        self.vehicle.goto_global(lat, lon, alt)
+        self.vehicle.goto_global(lat, lon, alt, yaw_deg)
         return Outcome(Status.SENT, remaining_m=self._remaining(s, lat, lon, alt)[0])
 
-    def goto(self, lat, lon, alt, timeout_s=None):
+    def goto(self, lat, lon, alt, timeout_s=None, yaw_deg=None):
         s, rejected = self._prepare(lat, lon, alt)
         if rejected:
             log.warning("goto rejected: %s", rejected.message)
@@ -81,7 +81,7 @@ class Pilot:
         log.info("goto %.7f %.7f %.1f m (%.0f m away, timeout %.0f s)", lat, lon, alt, horiz, timeout_s)
         tol = min(self.limits.arrive_tol_m, max(0.5, 0.25 * horiz))
         start = last_sent = self.vehicle.now()
-        self.vehicle.goto_global(lat, lon, alt)
+        self.vehicle.goto_global(lat, lon, alt, yaw_deg)
         best = math.hypot(horiz, vert)
         best_at = start
         while True:
@@ -94,7 +94,9 @@ class Pilot:
                 log.warning("goto aborted: %s", abort.message)
                 return abort
             horiz, vert = self._remaining(s, lat, lon, alt)
-            if horiz <= tol and vert <= self.limits.arrive_alt_tol_m:
+            yaw_ok = yaw_deg is None or (s.heading is not None and
+                                         abs(angle_diff(s.heading, yaw_deg)) <= self.limits.yaw_tol_deg)
+            if horiz <= tol and vert <= self.limits.arrive_alt_tol_m and yaw_ok:
                 log.info("arrived (%.1f m)", horiz)
                 return Outcome(Status.ARRIVED, remaining_m=horiz)
             dist = math.hypot(horiz, vert)
@@ -109,29 +111,33 @@ class Pilot:
                 log.warning("timed out %.1f m short", horiz)
                 return Outcome(Status.TIMEOUT, "timed out", horiz)
             if now - last_sent >= self.resend_s:
-                self.vehicle.goto_global(lat, lon, alt)
+                self.vehicle.goto_global(lat, lon, alt, yaw_deg)
                 last_sent = now
 
-    def body_target(self, forward, right, down=0.0):
+    def body_target(self, forward, right, yaw=0.0, up=0.0):
+        s, now = self.vehicle.state(), self.vehicle.now()
         try:
-            self.guard.validate_nudge(forward, right, down)
+            self.guard.validate_nudge(forward, right, yaw, up)
+            if not s.has_position or s.heading is None:
+                raise SafetyError("no position or heading")
+            forward, right, note = self.guard.clamp_to_obstacles(s, now, forward, right)
         except SafetyError as e:
             return None, Outcome(Status.REJECTED, str(e))
-        s = self.vehicle.state()
-        if not s.has_position or s.heading is None:
-            return None, Outcome(Status.REJECTED, "no position or heading")
+        if note:
+            log.warning(note)
         north, east = body_to_ne(forward, right, s.heading)
         lat, lon = offset_latlon(s.lat, s.lon, north, east)
-        return (lat, lon, s.rel_alt - down), None
+        return (lat, lon, s.rel_alt + up, (s.heading + yaw) % 360), None
 
-    def nudge(self, forward, right, down=0.0, timeout_s=None):
-        target, rejected = self.body_target(forward, right, down)
+    def nudge(self, forward, right, yaw=0.0, up=0.0, timeout_s=None):
+        target, rejected = self.body_target(forward, right, yaw, up)
         if rejected:
             return rejected
-        return self.goto(*target, timeout_s=timeout_s)
+        lat, lon, alt, heading = target
+        return self.goto(lat, lon, alt, timeout_s=timeout_s, yaw_deg=heading)
 
-    def step(self, forward, right, down=0.0):
-        target, rejected = self.body_target(forward, right, down)
+    def step(self, forward, right):
+        target, rejected = self.body_target(forward, right)
         if rejected:
             return rejected
         return self.send(*target)

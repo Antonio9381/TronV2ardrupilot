@@ -23,6 +23,8 @@ class VehicleState:
     last_position: float = 0.0
     last_gps: float = 0.0
     last_battery: float = 0.0
+    sectors: tuple = (None,) * 8
+    last_proximity: float = 0.0
 
     @property
     def has_position(self):

@@ -9,7 +9,7 @@ The full setup and test procedure is the build guide (`docs/S500-build-guide.pdf
 ```
 TronV2ardrupilot/
 ├── agent/       tron: production companion code (objective → goto → search → track), tests, configs
-├── gcs/         ground scripts: goto.py (arm, take off, go), target.py (go, already flying)
+├── gcs/         ground scripts: goto.py (arm, take off, go), target.py (go, already flying), wasd.py (keyboard flying)
 ├── pi/          Pi scripts: nudge.py (body-relative move)
 ├── params/      flight controller parameters; newest dated file is current
 │   └── archive/ older snapshots
@@ -24,7 +24,7 @@ TronV2ardrupilot/
 | Port | Listener |
 |---|---|
 | 14550 | QGroundControl |
-| 14551 | gcs/goto.py, gcs/target.py |
+| 14551 | gcs/goto.py, gcs/target.py, gcs/wasd.py |
 | 14552 | pi/nudge.py when tested in SITL |
 | 14553 | tron on the laptop |
 | 14560 | tron on the Pi |
@@ -44,7 +44,8 @@ Scripts (drone flying in GUIDED for target.py and nudge.py; goto.py takes off it
 ```bash
 python3 gcs/goto.py   udpin:0.0.0.0:14551 LAT LON ALT
 python3 gcs/target.py udpin:0.0.0.0:14551 LAT LON ALT
-python3 pi/nudge.py   udpin:0.0.0.0:14552 FORWARD RIGHT DOWN
+python3 pi/nudge.py   udpin:0.0.0.0:14552 FORWARD RIGHT YAW UP
+python3 gcs/wasd.py   udpin:0.0.0.0:14551
 ```
 
 tron:

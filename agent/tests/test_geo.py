@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from tron.geo import body_to_ne, distance_m, expanding_square, ne_offset_m, offset_latlon
+from tron.geo import angle_diff, body_to_ne, distance_m, expanding_square, free_distance, ne_offset_m, offset_latlon
 
 
 def test_offset_roundtrip():
@@ -30,3 +30,21 @@ def test_expanding_square_stays_inside():
     assert len(pts) > 8
     steps = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(pts, pts[1:])]
     assert min(steps) == pytest.approx(5)
+
+
+def test_free_distance():
+    clear = (None,) * 8
+    assert free_distance(clear, 0, 1.0) == math.inf
+    front = (5.0,) + (None,) * 7
+    assert free_distance(front, 0, 1.0) == pytest.approx(5.0)
+    assert free_distance(front, 90, 1.0) == math.inf
+    assert free_distance(front, 180, 1.0) == math.inf
+    diag = (None, 1.2) + (None,) * 6
+    assert free_distance(diag, 0, 1.0) == pytest.approx(1.2 * math.cos(math.radians(45)))
+    far_diag = (None, 3.0) + (None,) * 6
+    assert free_distance(far_diag, 0, 1.0) == math.inf
+
+
+def test_angle_diff():
+    assert angle_diff(10, 350) == pytest.approx(20)
+    assert angle_diff(350, 10) == pytest.approx(-20)

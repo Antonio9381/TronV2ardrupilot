@@ -31,6 +31,12 @@ class Limits:
     link_timeout_s: float = 3.0
     position_timeout_s: float = 2.0
     require_path_planning: bool = True
+    require_lidar: bool = True
+    obstacle_clearance_m: float = 2.5
+    body_half_width_m: float = 1.0
+    max_yaw_deg: float = 180.0
+    yaw_tol_deg: float = 5.0
+    proximity_timeout_s: float = 2.0
 
 
 @dataclass

@@ -17,12 +17,14 @@ COPTER_MODES = {
 }
 
 POSITION_ONLY_MASK = 0b110111111000
+POSITION_YAW_MASK = 0b100111111000
 
 STREAMS = {
     mavlink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT: 5.0,
     mavlink.MAVLINK_MSG_ID_GPS_RAW_INT: 2.0,
     mavlink.MAVLINK_MSG_ID_SYS_STATUS: 2.0,
     mavlink.MAVLINK_MSG_ID_HOME_POSITION: 0.5,
+    mavlink.MAVLINK_MSG_ID_DISTANCE_SENSOR: 5.0,
 }
 
 
@@ -158,6 +160,16 @@ class MavlinkVehicle:
                 v = None if msg.voltage_battery in (0, 65535) else msg.voltage_battery / 1000.0
                 pct = None if msg.battery_remaining < 0 else msg.battery_remaining
                 self._state = s.evolve(battery_v=v, battery_pct=pct, last_battery=now)
+            elif t == "DISTANCE_SENSOR":
+                if msg.orientation > 7:
+                    return
+                if 0 < msg.current_distance < msg.max_distance:
+                    d = msg.current_distance / 100.0
+                else:
+                    d = msg.max_distance / 100.0
+                sectors = list(s.sectors)
+                sectors[msg.orientation] = d
+                self._state = s.evolve(sectors=tuple(sectors), last_proximity=now)
             elif t == "COMMAND_ACK":
                 self._acks[msg.command] = msg.result
             elif t == "PARAM_VALUE":
@@ -227,18 +239,20 @@ class MavlinkVehicle:
         if result != mavlink.MAV_RESULT_ACCEPTED:
             raise VehicleError(f"takeoff rejected (result {result})")
 
-    def goto_global(self, lat, lon, rel_alt):
+    def goto_global(self, lat, lon, rel_alt, yaw_deg=None):
+        mask = POSITION_ONLY_MASK if yaw_deg is None else POSITION_YAW_MASK
+        yaw = 0.0 if yaw_deg is None else math.radians(yaw_deg)
         with self._send_lock:
             self._m.mav.set_position_target_global_int_send(
                 0, self.target_system, self.target_component,
-                mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT, POSITION_ONLY_MASK,
+                mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT, mask,
                 int(round(lat * 1e7)), int(round(lon * 1e7)), float(rel_alt),
-                0, 0, 0, 0, 0, 0, 0, 0)
+                0, 0, 0, 0, 0, 0, yaw, 0)
 
     def hold(self):
         s = self.state()
         if s.has_position and s.mode == "GUIDED":
-            self.goto_global(s.lat, s.lon, s.rel_alt)
+            self.goto_global(s.lat, s.lon, s.rel_alt, s.heading)
 
     def rtl(self):
         self.set_mode("RTL")

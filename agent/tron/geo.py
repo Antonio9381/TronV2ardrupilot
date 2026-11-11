@@ -30,6 +30,23 @@ def body_to_ne(forward_m, right_m, heading_deg):
     return north, east
 
 
+def free_distance(sectors, bearing_deg, half_width_m):
+    free = math.inf
+    for k, d in enumerate(sectors):
+        if d is None:
+            continue
+        diff = math.radians((k * 45 - bearing_deg + 180) % 360 - 180)
+        if abs(diff) >= math.pi / 2:
+            continue
+        if abs(d * math.sin(diff)) < half_width_m:
+            free = min(free, d * math.cos(diff))
+    return free
+
+
+def angle_diff(a, b):
+    return (a - b + 180) % 360 - 180
+
+
 def expanding_square(step_m, radius_m):
     points = [(0.0, 0.0)]
     n = e = 0.0

@@ -136,7 +136,7 @@ def run(args, cfg):
             if args.command == "goto":
                 out = pilot.goto(args.lat, args.lon, args.alt)
             elif args.command == "nudge":
-                out = pilot.nudge(args.forward, args.right, args.down)
+                out = pilot.nudge(args.forward, args.right, args.yaw, args.up)
             else:
                 locator = build_locator(cfg.camera, objective.colour)
                 try:
@@ -169,9 +169,10 @@ def build_parser():
     g.add_argument("lon", type=float)
     g.add_argument("alt", type=float)
     n = sub.add_parser("nudge")
-    n.add_argument("forward", type=float)
-    n.add_argument("right", type=float)
-    n.add_argument("down", type=float, nargs="?", default=0.0)
+    n.add_argument("forward", type=float, help="metres, negative = back")
+    n.add_argument("right", type=float, help="metres, negative = left")
+    n.add_argument("yaw", type=float, nargs="?", default=0.0, help="degrees, negative = turn left")
+    n.add_argument("up", type=float, nargs="?", default=0.0, help="metres, negative = down")
     m = sub.add_parser("mission")
     m.add_argument("file")
     c = sub.add_parser("check-objective")

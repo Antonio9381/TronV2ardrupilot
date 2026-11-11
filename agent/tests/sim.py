@@ -1,6 +1,6 @@
 import math
 
-from tron.geo import distance_m, ne_offset_m, offset_latlon
+from tron.geo import angle_diff, distance_m, ne_offset_m, offset_latlon
 from tron.state import VehicleState
 
 HOME = (-33.888, 151.187)
@@ -23,7 +23,10 @@ class FakeVehicle:
             gps_fix=3, sats=18, battery_v=battery_v, battery_pct=90,
             last_heartbeat=self.t, last_position=self.t,
             last_gps=self.t, last_battery=self.t,
+            sectors=(12.0,) * 8, last_proximity=self.t,
         )
+        self.lidar_dead = False
+        self.yaw_rate = 45.0
         self.travelled = 0.0
 
     def at(self, t, fn):
@@ -47,13 +50,19 @@ class FakeVehicle:
         alive = self.link_dead_at is None or self.t < self.link_dead_at
         if alive:
             self._s = self._s.evolve(last_heartbeat=self.t, last_position=self.t, last_gps=self.t, last_battery=self.t)
+            if not self.lidar_dead:
+                self._s = self._s.evolve(last_proximity=self.t)
 
     def _physics(self, dt):
         self._s = self._s.evolve(battery_v=self._s.battery_v - self.drain_v_per_s * dt)
         s = self._s
         if self.target is None or s.mode != "GUIDED":
             return
-        lat, lon, alt = self.target
+        lat, lon, alt, yaw = self.target
+        if yaw is not None:
+            err = angle_diff(yaw, s.heading)
+            turn = max(-self.yaw_rate * dt, min(self.yaw_rate * dt, err))
+            s = s.evolve(heading=(s.heading + turn) % 360)
         n, e = ne_offset_m(s.lat, s.lon, lat, lon)
         d = math.hypot(n, e)
         move = min(d, self.speed * dt)
@@ -68,15 +77,15 @@ class FakeVehicle:
         nalt = s.rel_alt + max(-self.climb * dt, min(self.climb * dt, dz))
         self._s = s.evolve(lat=nlat, lon=nlon, rel_alt=nalt, ground_speed=move / dt)
 
-    def goto_global(self, lat, lon, alt):
-        self.commands.append(("goto", lat, lon, alt))
-        self.target = (lat, lon, alt)
+    def goto_global(self, lat, lon, alt, yaw_deg=None):
+        self.commands.append(("goto", lat, lon, alt, yaw_deg))
+        self.target = (lat, lon, alt, yaw_deg)
 
     def hold(self):
         self.commands.append(("hold",))
         s = self._s
         if s.mode == "GUIDED":
-            self.target = (s.lat, s.lon, s.rel_alt)
+            self.target = (s.lat, s.lon, s.rel_alt, s.heading)
 
     def set_mode(self, mode):
         self.commands.append(("mode", mode))

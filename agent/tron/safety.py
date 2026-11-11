@@ -1,7 +1,7 @@
 import logging
 import math
 
-from .geo import distance_m
+from .geo import distance_m, free_distance
 
 log = logging.getLogger("tron.safety")
 
@@ -78,9 +78,30 @@ class Guard:
         if leg > lim.max_leg_m:
             raise SafetyError(f"leg {leg:.0f} m exceeds {lim.max_leg_m:.0f} m")
 
-    def validate_nudge(self, forward, right, down):
-        for v in (forward, right, down):
+    def validate_nudge(self, forward, right, yaw, up):
+        for v in (forward, right, yaw, up):
             if not math.isfinite(v):
                 raise SafetyError("nudge is not finite")
-        if max(abs(forward), abs(right), abs(down)) > self.limits.max_nudge_m:
+        if max(abs(forward), abs(right), abs(up)) > self.limits.max_nudge_m:
             raise SafetyError(f"nudge larger than {self.limits.max_nudge_m:.1f} m")
+        if abs(yaw) > self.limits.max_yaw_deg:
+            raise SafetyError(f"yaw larger than {self.limits.max_yaw_deg:.0f} deg")
+
+    def clamp_to_obstacles(self, state, now, forward, right):
+        lim = self.limits
+        horiz = math.hypot(forward, right)
+        if horiz == 0:
+            return forward, right, None
+        if now - state.last_proximity > lim.proximity_timeout_s or all(d is None for d in state.sectors):
+            if lim.require_lidar:
+                raise SafetyError("no lidar data, can't check the way is clear")
+            return forward, right, None
+        bearing = math.degrees(math.atan2(right, forward))
+        free = free_distance(state.sectors, bearing, lim.body_half_width_m)
+        allowed = free - lim.obstacle_clearance_m
+        if allowed < 0.3:
+            raise SafetyError(f"obstacle {free:.1f} m that way, refusing")
+        if horiz <= allowed:
+            return forward, right, None
+        k = allowed / horiz
+        return forward * k, right * k, f"obstacle at {free:.1f} m, move shortened to {allowed:.1f} m"

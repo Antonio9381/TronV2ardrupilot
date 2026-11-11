@@ -42,6 +42,9 @@ class FakeAutopilot:
                 self.m.mav.global_position_int_send(0, -338880000, 1511870000, 40000, 10000, 100, 0, 0, 9000)
                 self.m.mav.gps_raw_int_send(0, 3, -338880000, 1511870000, 40000, 80, 100, 0, 0, 17)
                 self.m.mav.sys_status_send(0, 0, 0, 0, 15800, 1000, 87, 0, 0, 0, 0, 0, 0)
+                for k in range(8):
+                    self.m.mav.distance_sensor_send(0, 20, 1200, 350 if k == 2 else 1200, 0, 0, k, 0)
+                self.m.mav.distance_sensor_send(0, 20, 1200, 90, 0, 0, 25, 0)
             msg = self.m.recv_match(blocking=True, timeout=0.05)
             if msg is None:
                 continue
@@ -94,6 +97,9 @@ def test_telemetry_parsed(link):
     v, ap = link
     assert wait(lambda: v.state().has_telemetry)
     assert v.state().sats == 17
+    assert wait(lambda: v.state().sectors[7] is not None)
+    assert v.state().sectors[2] == pytest.approx(3.5)
+    assert v.state().sectors[0] == pytest.approx(12.0)
     s = v.state()
     assert s.lat == pytest.approx(-33.888)
     assert s.rel_alt == pytest.approx(10.0)
@@ -129,6 +135,10 @@ def test_goto_message(link):
     assert t.alt == pytest.approx(12.5)
     assert t.coordinate_frame == mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
     assert t.type_mask == 0b110111111000
+    v.goto_global(-33.8885, 151.1875, 12.5, 90)
+    assert wait(lambda: len(ap.targets) > 1)
+    assert ap.targets[1].type_mask == 0b100111111000
+    assert ap.targets[1].yaw == pytest.approx(1.5708, abs=1e-3)
 
 
 def test_hold_only_in_guided(link):

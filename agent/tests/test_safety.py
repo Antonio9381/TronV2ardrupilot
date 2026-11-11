@@ -53,8 +53,10 @@ def test_validate_target(guard, vehicle):
 
 
 def test_validate_nudge(guard):
-    guard.validate_nudge(5, -5, 0)
+    guard.validate_nudge(5, -5, -180, 5)
     with pytest.raises(SafetyError):
-        guard.validate_nudge(5.1, 0, 0)
+        guard.validate_nudge(5.1, 0, 0, 0)
     with pytest.raises(SafetyError):
-        guard.validate_nudge(float("inf"), 0, 0)
+        guard.validate_nudge(0, 0, 181, 0)
+    with pytest.raises(SafetyError):
+        guard.validate_nudge(float("inf"), 0, 0, 0)
